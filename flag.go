@@ -13,6 +13,7 @@ type Flag struct {
 }
 
 func InitFlag() Flag {
+	flag.Parse()
 	log.Info("start to init flag!")
 	var serverPort = flag.IntP("port", "p", 8080, "start port")
 	dir, _ := os.UserHomeDir()
