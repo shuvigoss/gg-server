@@ -102,5 +102,5 @@ func (h Helper) Save() error {
 		logrus.Errorf("拷贝文件夹异常 %v", err)
 		return err
 	}
-	return nil
+	return CreateSha1File(filepath.Join(target, h.fileName))
 }

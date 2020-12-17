@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
@@ -73,4 +75,28 @@ func Copy(src, dst string) error {
 		return err
 	}
 	return out.Close()
+}
+
+func CreateSha1File(f string) error {
+	res, err := hashSHA256File(f)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(f+".sha256", []byte(res), os.ModePerm)
+}
+
+func hashSHA256File(filePath string) (string, error) {
+	var hashValue string
+	file, err := os.Open(filePath)
+	if err != nil {
+		return hashValue, err
+	}
+	defer file.Close()
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return hashValue, err
+	}
+	hashInBytes := hash.Sum(nil)
+	hashValue = hex.EncodeToString(hashInBytes)
+	return hashValue, nil
 }
