@@ -44,6 +44,7 @@ func (h *Helper) Check() error {
 	hasGGJson := false
 	for ; index < len(files); index++ {
 		if files[index].Name() == "gg.json" {
+
 			hasGGJson = true
 			break
 		}

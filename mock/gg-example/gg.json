@@ -1,0 +1,22 @@
+{
+  "name": "gg-example",
+  "version": "1.0.0",
+  "actions": [
+    {
+      "key": "project",
+      "desc": "请输入项目名称",
+      "type": "input"
+    },
+    {
+      "key": "author",
+      "desc": "作者名称",
+      "type": "input"
+    },
+    {
+      "key": "hobby",
+      "desc": "爱好",
+      "type": "checkbox",
+      "conditions": ["吃饭", "睡觉", "打豆豆"]
+    }
+  ]
+}
