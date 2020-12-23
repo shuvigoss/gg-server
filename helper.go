@@ -77,7 +77,7 @@ func (h *Helper) parse() error {
 	h.GgJson = ggJson
 
 	if err = validate.Struct(ggJson); err != nil {
-		logrus.Errorf("validate ggjson error %v", err)
+		logrus.Errorf("校验 ggjson 异常 %v", err)
 		return err
 	}
 
@@ -99,9 +99,10 @@ func (h Helper) Save() error {
 		return err
 	}
 
-	if err := Copy(filepath.Join(h.tmpDir, h.fileName), filepath.Join(target, h.fileName)); err != nil {
+	saveName := h.GgJson.Name + path.Ext(h.fileName)
+	if err := Copy(filepath.Join(h.tmpDir, h.fileName), filepath.Join(target, saveName)); err != nil {
 		logrus.Errorf("拷贝文件夹异常 %v", err)
 		return err
 	}
-	return CreateSha1File(filepath.Join(target, h.fileName))
+	return CreateSha256File(filepath.Join(target, saveName))
 }

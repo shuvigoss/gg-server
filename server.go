@@ -7,14 +7,11 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -90,13 +87,18 @@ func query(c *gin.Context) {
 func download(c *gin.Context) {
 	name := c.Query("name")
 	version := c.Query("version")
-	target := getTarget(name, version)
-	children := ListDir(target, "")
-	file := getZipFile(children, name)
-	if file != "" {
-		c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file))
+	info, err := NewScaffoldInfo(viper.GetString("store"), name, version)
+	if err != nil {
+		logrus.Errorf("脚手架信息查询异常 name :%s, version :%s", name, version)
+		c.JSON(http.StatusOK, FailWithMsg(BizError, "脚手架信息查询异常"))
+		return
+	}
+
+	byVersion, success := info.GetByVersion(version)
+	if success {
+		c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%s", byVersion.ZipFile))
 		c.Writer.Header().Add("Content-Type", "application/octet-stream")
-		c.File(filepath.Join(target, file))
+		c.File(filepath.Join(viper.GetString("store"), name, byVersion.Version, byVersion.ZipFile))
 		return
 	}
 	logrus.Errorf("没有找到相应文件 name :%s, version :%s", name, version)
@@ -106,56 +108,19 @@ func download(c *gin.Context) {
 func check(c *gin.Context) {
 	name := c.Query("name")
 	version := c.Query("version")
-	target := getTarget(name, version)
-	children := ListDir(target, "")
-	file := getZipFile(children, name)
-	sha256File, err := ioutil.ReadFile(filepath.Join(target, file+".sha256"))
+	info, err := NewScaffoldInfo(viper.GetString("store"), name, version)
 	if err != nil {
-		logrus.Errorf("没有找到sha256文件 %s, %s, %s", name, version, file)
-		c.JSON(http.StatusOK, FailWithMsg(BizError, "未找到sha256文件"))
+		logrus.Errorf("脚手架信息查询异常 name :%s, version :%s", name, version)
+		c.JSON(http.StatusOK, FailWithMsg(BizError, "脚手架信息查询异常"))
 		return
 	}
 
-	c.JSON(http.StatusOK, SuccessMsg(string(sha256File), "OK"))
-}
-
-func getZipFile(children []string, name string) string {
-	for _, f := range children {
-		match, _ := regexp.Match("^"+name+".*\\.(zip|gz|tar)$", []byte(f))
-		if match {
-			return f
-		}
+	byVersion, success := info.GetByVersion(version)
+	if success {
+		c.JSON(http.StatusOK, SuccessMsg(byVersion.Sha256, "OK"))
+	} else {
+		c.JSON(http.StatusOK, FailWithMsg(BizError, "没有找到相关脚手架"))
 	}
-	return ""
-}
-
-func getTarget(name string, version string) string {
-	dir := viper.GetString("store")
-	dirs := ListDirAccurate(dir, name)
-
-	target := ""
-	for _, d := range dirs {
-		if d == name {
-			children := ListDir(path.Join(dir, d), "")
-			if len(children) == 0 {
-				break
-			}
-			if version == "" {
-				sort.Strings(children)
-				target = path.Join(dir, d, children[len(children)-1])
-				break
-			}
-
-			for _, v := range children {
-				if v == version {
-					target = path.Join(dir, d, v)
-					break
-				}
-			}
-			break
-		}
-	}
-	return target
 }
 
 func checkFile(file *multipart.FileHeader, c *gin.Context) (string, error) {

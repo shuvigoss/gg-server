@@ -77,7 +77,7 @@ func Copy(src, dst string) error {
 	return out.Close()
 }
 
-func CreateSha1File(f string) error {
+func CreateSha256File(f string) error {
 	res, err := hashSHA256File(f)
 	if err != nil {
 		return err
